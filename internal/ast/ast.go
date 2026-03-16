@@ -116,6 +116,22 @@ func (b *Block) BlockAtPath(path cty.Path) *Block {
 	return &Block{block: lastChild}
 }
 
+// HasAttribute returns true if the block has an attribute with the given name.
+func (b *Block) HasAttribute(name string) bool {
+	return b.block.Body().GetAttribute(name) != nil
+}
+
+// GetAttributeExpression returns the expression of the named attribute,
+// or nil if the attribute does not exist. This is useful for inspecting
+// or comparing attribute values at the token level.
+func (b *Block) GetAttributeExpression(name string) *hclwrite.Expression {
+	attr := b.block.Body().GetAttribute(name)
+	if attr == nil {
+		return nil
+	}
+	return attr.Expr()
+}
+
 // RenameAttribute renames an attribute from "from" to "to" within the block.
 // Returns true if the attribute was found and renamed, false otherwise.
 func (b *Block) RenameAttribute(from, to string) bool {

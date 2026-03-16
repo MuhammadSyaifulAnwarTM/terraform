@@ -1136,6 +1136,56 @@ func TestFile_AppendComment(t *testing.T) {
 	}
 }
 
+func TestBlock_HasAttribute(t *testing.T) {
+	src := `resource "test" "example" {
+  ami = "abc-123"
+}
+`
+	f, err := ParseFile([]byte(src), "test.tf", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	blocks := f.FindBlocks("resource", "test")
+	if len(blocks) != 1 {
+		t.Fatalf("expected 1 block, got %d", len(blocks))
+	}
+	b := blocks[0]
+
+	if !b.HasAttribute("ami") {
+		t.Error("expected HasAttribute(ami) = true")
+	}
+	if b.HasAttribute("nonexistent") {
+		t.Error("expected HasAttribute(nonexistent) = false")
+	}
+}
+
+func TestBlock_GetAttributeExpression(t *testing.T) {
+	src := `resource "test" "example" {
+  ami = "abc-123"
+}
+`
+	f, err := ParseFile([]byte(src), "test.tf", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	blocks := f.FindBlocks("resource", "test")
+	b := blocks[0]
+
+	tokens := b.GetAttributeExpression("ami")
+	if tokens == nil {
+		t.Fatal("expected non-nil tokens for ami")
+	}
+	// The token bytes should contain the value "abc-123"
+	got := string(tokens.BuildTokens(nil).Bytes())
+	if !strings.Contains(got, `"abc-123"`) {
+		t.Errorf("expected tokens to contain abc-123, got %q", got)
+	}
+
+	if b.GetAttributeExpression("nonexistent") != nil {
+		t.Error("expected nil for nonexistent attribute")
+	}
+}
+
 func TestFile_RenameReferencePrefix(t *testing.T) {
 	tests := map[string]struct {
 		input string
